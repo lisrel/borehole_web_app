@@ -1,0 +1,332 @@
+
+<html>
+<head>
+	<title>Dashboard </title>
+	<% include ./partials/header %>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<script type="text/javascript" src="/javascripts/geojson.min.js"></script>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.3.7/dist/leaflet-search.src.css" />
+	<script src="https://unpkg.com/leaflet-search@2.3.7/dist/leaflet-search.src.js"></script>
+	<script type="text/javascript" src="/javascripts/leaflet-search.js"></script>
+	<link rel="stylesheet" href="/stylesheets/leaflet-search.min.css">
+	<link rel="stylesheet" type="text/css" href="http://labs.easyblog.it/maps/leaflet-search/src/leaflet-search.css">
+
+</head>
+<% include ./partials/head %>
+<body class="container" style="width: auto !important;">
+	<div class="row row-list">
+		<div class="col-md-10">
+			<div class="container-fluid box box-primary">
+				<div class="panel panel-heading">
+					<div class="row row-list">
+						<div id='map' style='width: auto !important; height: 80vh;'></div>
+						<script>
+							const map = L.map('map');
+
+							function get_numbers(user_loc){
+
+								$.getJSON("/api/prop_num/"+user_loc, function (data) {
+									$('<tr>').html(
+										"<td>" + data.num + "</td> </tr>" 
+										).appendTo('#property_summary');
+								});
+
+								$.getJSON("/api/allocated_num/"+user_loc, function (data) {
+									$('<tr>').html(
+										"<td>" + data.num + "</td> </tr>" 
+										).appendTo('#allocated_summary');
+								});
+
+								$.getJSON("/api/unallocated_num/"+user_loc, function (data) {
+									$('<tr>').html(
+										"<td>" + data.num + "</td> </tr>" 
+										).appendTo('#unallocated_summary');
+								});
+							}
+								map.setView([-17.81,30.91], 8)
+								map.setMaxBounds(map.getBounds()['_southWest'] , map.getBounds()['_northWest'] );
+							//	get_numbers(user_loc);
+							
+
+							const BING_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L';
+
+							const bingLayer = L.tileLayer.bing(BING_KEY,{
+								'attribution': 'bing maps',
+								maxZoom: 20,
+							}).addTo(map);
+
+							const basemap = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+								crs: 3875,
+								'attribution': 'Google',
+								maxZoom: 20,
+								subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+							}).addTo(map);
+
+							const openstreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+							{
+								attribution: ' OpenStreetMap',
+								maxZoom: 20
+							}).addTo(map);
+
+							function getColor(d) {
+								return d !== null && d!=='' ? 'black' : 'red';
+							}
+
+							var mystyle = {
+								"color": "green",
+								"weight": 1,
+								"opacity": 0.90
+							};
+
+							function style(feature) {
+
+								return {
+									fillColor: getColor(feature.properties.f3),
+									weight: 2,
+									opacity: 1,
+									color: 'grey',
+									dashArray: '3',
+									fillOpacity: 0.4
+								};
+							}
+
+							var cadaLayer = L.geoJson(false, {
+								style: style,
+								onEachFeature: onEachFeature
+							});
+
+							var zoneLayer = L.geoJson(false, {
+								style: mystyle,
+								onEachFeature:onEachFeature
+							});
+
+
+							$.getJSON("/api/parcels", function (data) {
+                            // add GeoJSON data to layer and add to the map once the file is loaded
+                            cadaLayer.addData(data).addTo(map);
+                       		});
+
+
+							var searchControl = new L.Control.Search({
+								layer: cadaLayer,
+								propertyName: 'f3',
+								circleLocation: true,
+								initial:false,
+								zoom:16,
+								textPlaceholder: 'e.g 00-0000-00',
+								position: 'topright'
+							});
+
+							searchControl.on('search_locationfound', function (e) {
+
+								e.layer.setStyle({
+									mouseover: highlightFeature,
+									mouseout: resetHighlight,
+									click: zoomToFeature
+								});
+								if (e.layer._popup) e.layer.openPopup(
+
+									);
+
+							}).on('search_collapsed', function (e) {
+
+							    cadaLayer.eachLayer(function (layer) { //restore feature color
+							    	cadaLayer.resetStyle(layer);
+							    });
+							});
+
+							map.addControl(searchControl); //inizialize search control
+
+							function highlightFeature(e) {
+								var layer = e.target;
+								layer.setStyle({
+									weight: 5,
+									color: '#666',
+									dashArray: '',
+									fillOpacity: 0.4
+								});
+
+								if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+									layer.bringToFront();
+								}
+							}
+
+							function resetHighlight(e) {
+								cadaLayer.resetStyle(e.target);
+							}
+
+							function zoomToFeature(e) {
+								map.fitBounds(e.target.getBounds());
+							}
+
+							function onEachFeature(feature, layer) {
+								layer.on({
+									mouseover: highlightFeature,
+									mouseout: resetHighlight,
+									click: zoomToFeature
+								});
+
+								var btn_name;
+								var edit_btn;
+
+								if (user_loc == 'chegutu' || user_loc == 'marondera') {
+
+									if (feature.properties.f3 == null || feature.properties.f3 =='') {
+										 btn_name = ' Allocate Property';
+									}else{
+										 btn_name = ' Edit Property Information';
+									}
+
+									 edit_btn = ' <p>Edit Property Info: <a data-id='+feature.properties.f6+'  data-toggle="modal" href="#myModal" class="btn btn-info btn-sm open_modal"> <span class="glyphicon glyphicon-edit"></span>'+ btn_name +'</a></p> ';
+								}else{
+									 edit_btn= "";
+								}
+
+								layer.bindPopup(
+									'Stand Number: ' + feature.properties.f1 + '</br>'+
+									'Street Address: ' + feature.properties.f2 + '</br>'
+									+ 'Account Number: ' + feature.properties.f3 + '</br>'
+									+ 'Account Name: ' + feature.properties.f4 + '</br>' +
+									edit_btn
+								)
+							}
+
+							const baseMaps = {
+								'Google Hybrid': basemap,
+								'Bing': bingLayer,
+								'Open Streetmap': openstreet,
+
+							};
+							const overlays = {
+								"All Properties": cadaLayer,
+								// "Zone": zoneLayer
+							};
+
+							L.control.layers(baseMaps, overlays,null,{collapsed:false}).addTo(map);
+
+						</script>
+
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-2">
+
+			<div class="box box-primary" id="townSummary">
+				<section>Land Parcel Summary</secyion>
+					<table class="table table-bordered table-striped" id="allocated_summary">
+						<tr>
+							<th><small>Allocated Land Parcels</small></th>
+						</tr>
+					</table>
+
+					<table class="table table-bordered table-striped" id="unallocated_summary">
+						<tr>
+							<th><small>Unallocated Land Parcels</small></th>
+						</tr>
+					</table>
+
+					<table class="table table-bordered table-striped " id="property_summary">
+					  <tr>
+					  	<th><small>Total Land Parcels</small></th>
+					  </tr>
+					</table>
+			</div>
+		</div>
+
+	</body>
+	<footer>
+		<div class="container row vertical-offset-100">
+			<div class="col-md-4 col-md-offset-4 pull-center">
+				<% include ./partials/footer %>
+			</div>
+		</div>
+	</footer>
+
+
+	<div id="myModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Edit Property Information</h4>
+				</div>
+				<div class="modal-body">
+					<form id="property_data">
+						<div class="form-group">
+							<label for="exampleInputEmail1">Street Address</label>
+							<input  name="street_ad" readonly="readonly" type="text" class="form-control" id="street_ad" placeholder="Enter Street Address">
+						</div>
+
+						<div class="form-group">
+							<label for="exampleInputEmail1">Street Number</label>
+							<input  name="street_number" readonly="readonly" type="text" class="form-control" id="street_number" placeholder="Enter Street Number">
+						</div>
+
+						<div class="form-group">
+							<label for="exampleInputEmail1">Account Name</label>
+							<input  name="acc_name" type="text" required="required" class="form-control" id="acc_name" placeholder="Enter Account Name">
+						</div>
+
+						<div class="form-group">
+							<label for="exampleInputEmail1">Account Number</label>
+							<input  name="acc_num" type="text" required="required" class="form-control" id="acc_num" placeholder="Enter Account Number">
+						</div>
+
+						<input type="hidden" name="table_id" id="table_id" value="">
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-success btn_save">Save Information</button>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	</html>
+
+	<script>
+
+		$(document).on("click", ".open_modal", function () {
+			var UserName = $(this).data('id');
+			$(".modal-body #table_id").val( UserName );
+			$(".modal-body #street_ad").val();
+			$(".modal-body #street_number").val();
+			$(".modal-body #acc_name").val();
+			$(".modal-body #acc_num").val();
+
+			$.getJSON("/api/parcel/"+UserName, function (data) {
+				$(".modal-body #street_ad").val(data.features[0].properties.f1 );
+				$(".modal-body #street_number").val(data.features[0].properties.f2);
+				$(".modal-body #acc_name").val(data.features[0].properties.f4);
+				$(".modal-body #acc_num").val(data.features[0].properties.f3);
+			});
+		});
+
+		$('.btn_save').click(function(){
+		var form = $('#property_data');
+		 var hidden = form.find(':input:hidden').removeAttr('hidden');
+
+		 var  form_data = form.serialize();
+		 hidden.attr('hidden', 'hidden');
+
+			$.ajax({ 
+				url: '/save_info',
+				type: 'POST',
+				cache: false, 
+				data: form_data, 
+				dataType:'json',
+				success: function(data){
+					location.reload();
+				}
+				, error: function(jqXHR, textStatus, err){
+					alert('text status '+textStatus+', err '+err)
+				}
+			})
+		}); 
+	</script>
