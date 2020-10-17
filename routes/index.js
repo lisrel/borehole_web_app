@@ -29,29 +29,22 @@ var sess;
 
 
 var username = "postgres";
-var password = "password";
+var password = "postgres";
 var host = "127.0.0.1:5432";
-var database = "lgs";
+var database = "boreholes";
 var conString = "postgres://" + username + ":" + password + "@" + host + "/" + database;
 
+const boreholes = "SELECT row_to_json(fc) " +
+"FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) " +
+"As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, " +
+"row_to_json((b_name, b_type, b_status, b_descript,gid))" +
+" As boreholes FROM final_boreholes As lg) As f) As fc ";
 
 const cadastral = "SELECT row_to_json(fc) " +
 "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) " +
 "As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, " +
-"row_to_json((stand_id, street_ad, acc_no, account_name, town,id))" +
-" As properties FROM lgs As lg  WHERE town is null) As f) As fc ";
-
-const cadastral1 = "SELECT row_to_json(fc) " +
-"FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) " +
-"As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, " +
-"row_to_json((stand_id, street_ad, acc_no, account_name, town,id))" +
-" As properties FROM lgs As lg WHERE town = 'chegutu') As f) As fc ";
-
-const cadastral2 = "SELECT row_to_json(fc) " +
-"FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) " +
-"As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, " +
-"row_to_json((stand_id, street_ad, acc_no, account_name, town,id))" +
-" As properties FROM lgs As lg) As f) As fc ";
+"row_to_json((stand_id, street_ad, acc_no, acc_name, town,gid))" +
+" As properties FROM properties As lg) As f) As fc ";
 
 router.get('/', sessionChecker, (req, res,next) => {
 	res.redirect('dashboard');
@@ -208,18 +201,24 @@ router.get('/api/parcels', function(req, res) {
 	sess = req.session.user;
 	const client = new Client(conString);
 	client.connect();
-	if (sess.user_type === 'ministry'){
-		query = client.query(new Query(cadastral2));
-       // console.log(cadastral2)
-   }else if(sess.user_type === 'local'){
-   	if (sess.user_location === 'marondera'){
-   		query = client.query(new Query(cadastral));
-            //console.log(cadastral)
-        }else if(sess.user_location === 'chegutu'){
-        	query = client.query(new Query(cadastral1));
-            //console.log(cadastral1)
-        }
-    }
+	query = client.query(new Query(cadastral));
+
+    query.on("row", function(row, result) {
+    	result.addRow(row);
+    });
+    query.on("end", function(result) {
+    	res.send(result.rows[0].row_to_json);
+    	res.end();
+    });
+    //client.end();
+});
+
+router.get('/api/boreholes', function(req, res) {
+	let query;
+	sess = req.session.user;
+	const client = new Client(conString);
+	client.connect();
+	query = client.query(new Query(boreholes));
 
     query.on("row", function(row, result) {
     	result.addRow(row);

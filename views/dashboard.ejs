@@ -43,28 +43,29 @@
 										).appendTo('#unallocated_summary');
 								});
 							}
-								map.setView([-17.81,30.91], 8)
-								map.setMaxBounds(map.getBounds()['_southWest'] , map.getBounds()['_northWest'] );
-							//	get_numbers(user_loc);
-							
-
+								map.setView([-19.4657,29.8124], 13);
+								map.setMaxBounds([[-19.331147, 29.801555],[-19.536874, 29.773284] ]);
+						
 							const BING_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L';
 
 							const bingLayer = L.tileLayer.bing(BING_KEY,{
 								'attribution': 'bing maps',
 								maxZoom: 20,
+								minZoom: 12,
 							}).addTo(map);
 
 							const basemap = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
 								crs: 3875,
 								'attribution': 'Google',
 								maxZoom: 20,
+								minZoom: 12,
 								subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
 							}).addTo(map);
 
 							const openstreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png',
 							{
 								attribution: ' OpenStreetMap',
+								minZoom: 12,
 								maxZoom: 20
 							}).addTo(map);
 
@@ -78,21 +79,45 @@
 								"opacity": 0.90
 							};
 
-							function style(feature) {
-
+							function b_style(feature) {
 								return {
-									fillColor: getColor(feature.properties.f3),
+									fillColor: b_getColor(feature.boreholes.f3),
+									weight: 8,
+									opacity: 10,
+									color: 'red',
+									dashArray: '1',
+									fillOpacity: 6,
+									radius: 4,
+
+								};
+							}
+
+							function b_getColor(d) {
+								return d !== null && d ==='Functional' ? 'green' : 'red';
+							}
+
+							function style(feature) {
+								return {
+									fillColor: getColor(feature.properties.f1),
 									weight: 2,
-									opacity: 1,
+									opacity: 0.4,
 									color: 'grey',
 									dashArray: '3',
-									fillOpacity: 0.4
+									fillOpacity: 0.5
 								};
 							}
 
 							var cadaLayer = L.geoJson(false, {
 								style: style,
 								onEachFeature: onEachFeature
+							});
+
+							var boreholeLayer = L.geoJson(false, {
+								style: b_style,
+								pointToLayer: function(feature, latlng) {
+								return new L.Marker(latlng, {b_style});
+							},
+								onEachFeature: onEachBFeature
 							});
 
 							var zoneLayer = L.geoJson(false, {
@@ -102,18 +127,26 @@
 
 
 							$.getJSON("/api/parcels", function (data) {
+								console.log('here')
                             // add GeoJSON data to layer and add to the map once the file is loaded
                             cadaLayer.addData(data).addTo(map);
+							   });
+
+
+							$.getJSON("/api/boreholes", function (data) {
+								console.log('here2')
+
+                            // add GeoJSON data to layer and add to the map once the file is loaded
+                            boreholeLayer.addData(data).addTo(map);
                        		});
-
-
+							   
 							var searchControl = new L.Control.Search({
 								layer: cadaLayer,
-								propertyName: 'f3',
+								propertyName: 'f2',
 								circleLocation: true,
 								initial:false,
 								zoom:16,
-								textPlaceholder: 'e.g 00-0000-00',
+								textPlaceholder: 'e.g 123 Mkoba',
 								position: 'topright'
 							});
 
@@ -166,28 +199,26 @@
 									click: zoomToFeature
 								});
 
-								var btn_name;
-								var edit_btn;
-
-								if (user_loc == 'chegutu' || user_loc == 'marondera') {
-
-									if (feature.properties.f3 == null || feature.properties.f3 =='') {
-										 btn_name = ' Allocate Property';
-									}else{
-										 btn_name = ' Edit Property Information';
-									}
-
-									 edit_btn = ' <p>Edit Property Info: <a data-id='+feature.properties.f6+'  data-toggle="modal" href="#myModal" class="btn btn-info btn-sm open_modal"> <span class="glyphicon glyphicon-edit"></span>'+ btn_name +'</a></p> ';
-								}else{
-									 edit_btn= "";
-								}
-
 								layer.bindPopup(
 									'Stand Number: ' + feature.properties.f1 + '</br>'+
 									'Street Address: ' + feature.properties.f2 + '</br>'
 									+ 'Account Number: ' + feature.properties.f3 + '</br>'
-									+ 'Account Name: ' + feature.properties.f4 + '</br>' +
-									edit_btn
+									+ 'Account Name: ' + feature.properties.f4 + '</br>'
+								)
+							}
+
+							function onEachBFeature(feature, layer) {
+								layer.on({
+									mouseover: highlightFeature,
+									// mouseout: resetHighlight,
+									// click: zoomToFeature
+								});
+
+								layer.bindPopup(
+									'Borehole Name: ' + feature.boreholes.f1 + '</br>'+
+									'Borehole Type: ' + feature.boreholes.f2 + '</br>'
+									+ 'Borehole Status: ' + feature.boreholes.f3 + '</br>'
+									+ 'Borehole Description: ' + feature.boreholes.f4 + '</br>'
 								)
 							}
 
@@ -198,8 +229,8 @@
 
 							};
 							const overlays = {
+								"Boreholes": boreholeLayer,
 								"All Properties": cadaLayer,
-								// "Zone": zoneLayer
 							};
 
 							L.control.layers(baseMaps, overlays,null,{collapsed:false}).addTo(map);
@@ -214,22 +245,22 @@
 		<div class="col-md-2">
 
 			<div class="box box-primary" id="townSummary">
-				<section>Land Parcel Summary</secyion>
+				<section>Summary</secyion>
 					<table class="table table-bordered table-striped" id="allocated_summary">
 						<tr>
-							<th><small>Allocated Land Parcels</small></th>
+							<th><small>Total Number of Properties</small></th>
 						</tr>
 					</table>
 
 					<table class="table table-bordered table-striped" id="unallocated_summary">
 						<tr>
-							<th><small>Unallocated Land Parcels</small></th>
+							<th><small> Number of Boreholes </small></th>
 						</tr>
 					</table>
 
 					<table class="table table-bordered table-striped " id="property_summary">
 					  <tr>
-					  	<th><small>Total Land Parcels</small></th>
+					  	<th><small>Working Boreholes</small></th>
 					  </tr>
 					</table>
 			</div>
@@ -244,89 +275,8 @@
 		</div>
 	</footer>
 
-
-	<div id="myModal" class="modal fade" role="dialog">
-		<div class="modal-dialog">
-
-			<!-- Modal content-->
-			<div class="modal-content">
-				<div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal">&times;</button>
-					<h4 class="modal-title">Edit Property Information</h4>
-				</div>
-				<div class="modal-body">
-					<form id="property_data">
-						<div class="form-group">
-							<label for="exampleInputEmail1">Street Address</label>
-							<input  name="street_ad" readonly="readonly" type="text" class="form-control" id="street_ad" placeholder="Enter Street Address">
-						</div>
-
-						<div class="form-group">
-							<label for="exampleInputEmail1">Street Number</label>
-							<input  name="street_number" readonly="readonly" type="text" class="form-control" id="street_number" placeholder="Enter Street Number">
-						</div>
-
-						<div class="form-group">
-							<label for="exampleInputEmail1">Account Name</label>
-							<input  name="acc_name" type="text" required="required" class="form-control" id="acc_name" placeholder="Enter Account Name">
-						</div>
-
-						<div class="form-group">
-							<label for="exampleInputEmail1">Account Number</label>
-							<input  name="acc_num" type="text" required="required" class="form-control" id="acc_num" placeholder="Enter Account Number">
-						</div>
-
-						<input type="hidden" name="table_id" id="table_id" value="">
-					</form>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-success btn_save">Save Information</button>
-				</div>
-			</div>
-
-		</div>
-	</div>
-
 	</html>
 
 	<script>
-
-		$(document).on("click", ".open_modal", function () {
-			var UserName = $(this).data('id');
-			$(".modal-body #table_id").val( UserName );
-			$(".modal-body #street_ad").val();
-			$(".modal-body #street_number").val();
-			$(".modal-body #acc_name").val();
-			$(".modal-body #acc_num").val();
-
-			$.getJSON("/api/parcel/"+UserName, function (data) {
-				$(".modal-body #street_ad").val(data.features[0].properties.f1 );
-				$(".modal-body #street_number").val(data.features[0].properties.f2);
-				$(".modal-body #acc_name").val(data.features[0].properties.f4);
-				$(".modal-body #acc_num").val(data.features[0].properties.f3);
-			});
-		});
-
-		$('.btn_save').click(function(){
-		var form = $('#property_data');
-		 var hidden = form.find(':input:hidden').removeAttr('hidden');
-
-		 var  form_data = form.serialize();
-		 hidden.attr('hidden', 'hidden');
-
-			$.ajax({ 
-				url: '/save_info',
-				type: 'POST',
-				cache: false, 
-				data: form_data, 
-				dataType:'json',
-				success: function(data){
-					location.reload();
-				}
-				, error: function(jqXHR, textStatus, err){
-					alert('text status '+textStatus+', err '+err)
-				}
-			})
-		}); 
+ 
 	</script>
