@@ -23,28 +23,27 @@
 						<script>
 							const map = L.map('map');
 
-							function get_numbers(user_loc){
 
-								$.getJSON("/api/prop_num/"+user_loc, function (data) {
+								$.getJSON("/api/prop_num/", function (data) {
 									$('<tr>').html(
 										"<td>" + data.num + "</td> </tr>" 
 										).appendTo('#property_summary');
 								});
 
-								$.getJSON("/api/allocated_num/"+user_loc, function (data) {
+								$.getJSON("/api/allocated_num/", function (data) {
 									$('<tr>').html(
 										"<td>" + data.num + "</td> </tr>" 
 										).appendTo('#allocated_summary');
 								});
 
-								$.getJSON("/api/unallocated_num/"+user_loc, function (data) {
+								$.getJSON("/api/unallocated_num/", function (data) {
 									$('<tr>').html(
 										"<td>" + data.num + "</td> </tr>" 
 										).appendTo('#unallocated_summary');
 								});
-							}
+							
 								map.setView([-19.4657,29.8124], 13);
-								map.setMaxBounds([[-19.331147, 29.801555],[-19.536874, 29.773284] ]);
+								map.setMaxBounds([ [-19.557636, 29.749865],[-19.330108, 29.864213] ]);
 						
 							const BING_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L';
 
@@ -218,7 +217,10 @@
 									'Borehole Name: ' + feature.boreholes.f1 + '</br>'+
 									'Borehole Type: ' + feature.boreholes.f2 + '</br>'
 									+ 'Borehole Status: ' + feature.boreholes.f3 + '</br>'
-									+ 'Borehole Description: ' + feature.boreholes.f4 + '</br>'
+									+ 'Borehole Description: ' + feature.boreholes.f4 + '</br>' +
+									'<p>Edit Borehole Info: <a data-id='+feature.boreholes.f5+'  data-toggle="modal" href="#myModal" class="btn btn-info btn-sm open_modal">'+
+										 '<span class="glyphicon glyphicon-edit"></span> Edit Info</a>' +
+									'</p> '
 								)
 							}
 
@@ -246,7 +248,7 @@
 
 			<div class="box box-primary" id="townSummary">
 				<section>Summary</secyion>
-					<table class="table table-bordered table-striped" id="allocated_summary">
+					<table class="table table-bordered table-striped" id="property_summary">
 						<tr>
 							<th><small>Total Number of Properties</small></th>
 						</tr>
@@ -258,7 +260,7 @@
 						</tr>
 					</table>
 
-					<table class="table table-bordered table-striped " id="property_summary">
+					<table class="table table-bordered table-striped " id="allocated_summary">
 					  <tr>
 					  	<th><small>Working Boreholes</small></th>
 					  </tr>
@@ -274,7 +276,86 @@
 			</div>
 		</div>
 	</footer>
+	<div id="myModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
 
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Edit Borehole Information</h4>
+				</div>
+				<div class="modal-body">
+					<form id="property_data">
+						<div class="form-group">
+							<label for="exampleInputEmail1">Borehole Name</label>
+							<input  name="street_ad" required="required" type="text" class="form-control" id="street_ad" placeholder="Enter Borehole Name">
+						</div>
+
+						<div class="form-group">
+							<label for="exampleInputEmail1">Borehole Type</label>
+							<input  name="street_number" type="text" class="form-control" id="street_number" placeholder="Enter Borehole Type">
+						</div>
+
+						<div class="form-group">
+							<label for="exampleInputEmail1">Borehole Description</label>
+							<textarea  name="acc_name" type="text"  class="form-control" id="acc_name" placeholder="Borehole Description"> </textarea>
+						</div>
+
+						<div class="form-group">
+							<label for="exampleInputEmail1">Borehole Status</label>
+							<input  name="acc_num" type="text"  class="form-control" id="acc_num" placeholder="Enter Account Number">
+						</div>
+
+						<input type="hidden" name="table_id" id="table_id" value="">
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-success btn_save">Save Information</button>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+
+	<script>
+		$(document).on("click", ".open_modal", function () {
+			var UserName = $(this).data('id');
+			$(".modal-body #table_id").val( UserName );
+			$(".modal-body #street_ad").val();
+			$(".modal-body #street_number").val();
+			$(".modal-body #acc_name").val();
+			$(".modal-body #acc_num").val();
+			$.getJSON("/api/parcel/"+UserName, function (data) {
+				$(".modal-body #street_ad").val(data.features[0].boreholes.f1 );
+				$(".modal-body #street_number").val(data.features[0].boreholes.f2);
+				$(".modal-body #acc_name").val(data.features[0].boreholes.f4);
+				$(".modal-body #acc_num").val(data.features[0].boreholes.f3);
+			});
+		});
+		$('.btn_save').click(function(){
+		var form = $('#property_data');
+		 var hidden = form.find(':input:hidden').removeAttr('hidden');
+		 var  form_data = form.serialize();
+		 hidden.attr('hidden', 'hidden');
+			$.ajax({ 
+				url: '/save_info',
+				type: 'POST',
+				cache: false, 
+				data: form_data, 
+				dataType:'json',
+				success: function(data){
+					location.reload();
+				}
+				, error: function(jqXHR, textStatus, err){
+					alert('text status '+textStatus+', err '+err)
+				}
+			})
+		}); 
+ 
+	</script> 
 	</html>
 
 	<script>
