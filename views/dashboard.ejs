@@ -10,7 +10,7 @@
 	<script type="text/javascript" src="/javascripts/leaflet-search.js"></script>
 	<link rel="stylesheet" href="/stylesheets/leaflet-search.min.css">
 	<link rel="stylesheet" type="text/css" href="http://labs.easyblog.it/maps/leaflet-search/src/leaflet-search.css">
-
+	
 </head>
 <% include ./partials/head %>
 <body class="container" style="width: auto !important;">
@@ -22,342 +22,487 @@
 						<div id='map' style='width: auto !important; height: 80vh;'></div>
 						<script>
 							const map = L.map('map');
-
-
-								$.getJSON("/api/prop_num/", function (data) {
-									$('<tr>').html(
-										"<td>" + data.num + "</td> </tr>" 
-										).appendTo('#property_summary');
+							
+							
+							$.getJSON("/api/prop_num/", function (data) {
+								$('<tr>').html(
+									"<td>" + data.num + "</td> </tr>" 
+									).appendTo('#property_summary');
 								});
-
+								
 								$.getJSON("/api/allocated_num/", function (data) {
 									$('<tr>').html(
 										"<td>" + data.num + "</td> </tr>" 
 										).appendTo('#allocated_summary');
-								});
-
-								$.getJSON("/api/unallocated_num/", function (data) {
-									$('<tr>').html(
-										"<td>" + data.num + "</td> </tr>" 
-										).appendTo('#unallocated_summary');
-								});
-							
-								map.setView([-19.4657,29.8124], 13);
-								map.setMaxBounds([ [-19.557636, 29.749865],[-19.330108, 29.864213] ]);
+									});
+									
+									$.getJSON("/api/unallocated_num/", function (data) {
+										$('<tr>').html(
+											"<td>" + data.num + "</td> </tr>" 
+											).appendTo('#unallocated_summary');
+										});
+										
+										map.setView([-19.4657,29.8124], 13);
+										map.setMaxBounds([ [-19.557636, 29.749865],[-19.330108, 29.864213] ]);
+										
+										const BING_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L';
+										
+										const bingLayer = L.tileLayer.bing(BING_KEY,{
+											'attribution': 'bing maps',
+											maxZoom: 20,
+											minZoom: 12,
+										}).addTo(map);
+										
+										const basemap = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+											crs: 3875,
+											'attribution': 'Google',
+											maxZoom: 20,
+											minZoom: 12,
+											subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+										}).addTo(map);
+										
+										const openstreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+										{
+											attribution: ' OpenStreetMap',
+											minZoom: 12,
+											maxZoom: 20
+										}).addTo(map);
+										
+										function getColor(d) {
+											return d !== null && d!=='' ? 'black' : 'red';
+										}
+										
+										var mystyle = {
+											"color": "green",
+											"weight": 1,
+											"opacity": 0.90
+										};
+										
+										function b_style(feature) {
+											return {
+												fillColor: b_getColor(feature.boreholes.f3),
+												weight: 8,
+												opacity: 10,
+												color: b_getColor(feature.boreholes.f3),
+												dashArray: '1',
+												fillOpacity: 6,
+												radius: 4,
+												
+											};
+										}
+										
+										function b_getColor(d) {
+											return d !== null && d ==='Functional' ? 'green' : 'red';
+										}
+										
+										function style(feature) {
+											return {
+												fillColor: getColor(feature.properties.f1),
+												weight: 2,
+												opacity: 0.4,
+												color: 'grey',
+												dashArray: '3',
+												fillOpacity: 0.5
+											};
+										}
+										
+										var cadaLayer = L.geoJson(false, {
+											style: style,
+											onEachFeature: onEachFeature
+										});
+										
+										var greenIcon = new L.Icon({
+											iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+											shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+											iconSize: [25, 41],
+											iconAnchor: [12, 41],
+											popupAnchor: [1, -34],
+											shadowSize: [41, 41]
+										});
+										
+										var redIcon = new L.Icon({
+											iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+											shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+											iconSize: [25, 41],
+											iconAnchor: [12, 41],
+											popupAnchor: [1, -34],
+											shadowSize: [41, 41]
+										});
+										
+										function b_getIcon(d) {
+									// 		$(".modal-body #ph").val(data.features[0].boreholes.f6);
+									// $(".modal-body #ta").val(data.features[0].boreholes.f7);
+									// $(".modal-body #th").val(data.features[0].boreholes.f8);
+									// $(".modal-body #cah").val(data.features[0].boreholes.f9);
+									// $(".modal-body #mgh").val(data.features[0].boreholes.f10);
+									// $(".modal-body #mg").val(data.features[0].boreholes.f11);
+									// $(".modal-body #ca").val(data.features[0].boreholes.f12);
+									// $(".modal-body #do").val(data.features[0].boreholes.f13);
+									// $(".modal-body #do_perc").val(data.features[0].boreholes.f14);
+									// $(".modal-body #cl").val(data.features[0].boreholes.f15);
+									// $(".modal-body #tds").val(data.features[0].boreholes.f16);
+									// $(".modal-body #ec").val(data.features[0].boreholes.f17);
+									// $(".modal-body #turb").val(data.features[0].boreholes.f18);
+									// $(".modal-body #tc").val(data.features[0].boreholes.f19);
+											if(d.f3 === 'Functional' && (d.f6 >=6.5 && d.f6 <=8) && (d.f7 >=300 && d.f7 <=600)&& d.f11<50 && d.f15<250 && d.f16<500 && d.f17<400 && d.f18<5 && d.f12<75){
+												return greenIcon;
+											}else{
+												return redIcon;
+											}
+										}
+										
+										var boreholeLayer = L.geoJson(false, {
+											style: b_style,
+											pointToLayer: function(feature, latlng) {
+												return new L.marker(latlng, {icon: b_getIcon(feature.boreholes) });
+											},
+											onEachFeature: onEachBFeature
+										});
+										
+										var zoneLayer = L.geoJson(false, {
+											style: mystyle,
+											onEachFeature:onEachFeature
+										});
+										
+										
+										$.getJSON("/api/parcels", function (data) {
+											// add GeoJSON data to layer and add to the map once the file is loaded
+											cadaLayer.addData(data).addTo(map);
+										});
+										
+										
+										$.getJSON("/api/boreholes", function (data) {
+											
+											// add GeoJSON data to layer and add to the map once the file is loaded
+											boreholeLayer.addData(data).addTo(map);
+										});
+										
+										var searchControl = new L.Control.Search({
+											layer: cadaLayer,
+											propertyName: 'f2',
+											circleLocation: true,
+											initial:false,
+											zoom:16,
+											textPlaceholder: 'e.g 123 Mkoba',
+											position: 'topright'
+										});
+										
+										searchControl.on('search_locationfound', function (e) {
+											
+											e.layer.setStyle({
+												mouseover: highlightFeature,
+												mouseout: resetHighlight,
+												click: zoomToFeature
+											});
+											if (e.layer._popup) e.layer.openPopup(
+											
+											);
+											
+										}).on('search_collapsed', function (e) {
+											
+											cadaLayer.eachLayer(function (layer) { //restore feature color
+												cadaLayer.resetStyle(layer);
+											});
+										});
+										
+										map.addControl(searchControl); //inizialize search control
+										
+										function highlightFeature(e) {
+											var layer = e.target;
+											layer.setStyle({
+												weight: 5,
+												color: '#666',
+												dashArray: '',
+												fillOpacity: 0.4
+											});
+											
+											if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+												layer.bringToFront();
+											}
+										}
+										
+										function resetHighlight(e) {
+											cadaLayer.resetStyle(e.target);
+										}
+										
+										function zoomToFeature(e) {
+											map.fitBounds(e.target.getBounds());
+										}
+										
+										function onEachFeature(feature, layer) {
+											layer.on({
+												mouseover: highlightFeature,
+												mouseout: resetHighlight,
+												click: zoomToFeature
+											});
+											
+											layer.bindPopup(
+											'Stand Number: ' + feature.properties.f1 + '</br>'+
+											'Street Address: ' + feature.properties.f2 + '</br>'
+											+ 'Account Number: ' + feature.properties.f3 + '</br>'
+											+ 'Account Name: ' + feature.properties.f4 + '</br>'
+											)
+										}
+										
+										function onEachBFeature(feature, layer) {
+											layer.on({
+												mouseover: highlightFeature,
+												// mouseout: resetHighlight,
+												// click: zoomToFeature
+											});
+											
+											layer.bindPopup(
+											'Borehole Name: ' + feature.boreholes.f1 + '</br>'+
+											'Borehole Type: ' + feature.boreholes.f2 + '</br>'
+											+ 'Borehole Status: ' + feature.boreholes.f3 + '</br>'
+											+ 'Borehole Description: ' + feature.boreholes.f4 + '</br>' +
+											'<p>Edit Borehole Info: <a data-id='+feature.boreholes.f5+'  data-toggle="modal" href="#myModal" class="btn btn-info btn-sm open_modal">'+
+												'<span class="glyphicon glyphicon-edit"></span> Edit Info</a>' +
+												'</p> '
+												)
+											}
+											
+											const baseMaps = {
+												'Google Hybrid': basemap,
+												'Bing': bingLayer,
+												'Open Streetmap': openstreet,
+												
+											};
+											const overlays = {
+												"Boreholes": boreholeLayer,
+												"All Properties": cadaLayer,
+											};
+											
+											L.control.layers(baseMaps, overlays,null,{collapsed:false}).addTo(map);
+											
+										</script>
+										
+									</div>
+								</div>
+							</div>
+						</div>
 						
-							const BING_KEY = 'AuhiCJHlGzhg93IqUH_oCpl_-ZUrIE6SPftlyGYUvr9Amx5nzA-WqGcPquyFZl4L';
+						<div class="col-md-2">
+							
+							<div class="box box-primary" id="townSummary">
+								<section>Summary</secyion>
+									<table class="table table-bordered table-striped" id="property_summary">
+										<tr>
+											<th><small>Total Number of Properties</small></th>
+										</tr>
+									</table>
+									
+									<table class="table table-bordered table-striped" id="unallocated_summary">
+										<tr>
+											<th><small> Number of Boreholes </small></th>
+										</tr>
+									</table>
+									
+									<table class="table table-bordered table-striped " id="allocated_summary">
+										<tr>
+											<th><small>Working Boreholes</small></th>
+										</tr>
+									</table>
+								</div>
+							</div>
+							
+						</body>
+						<footer>
+							<div class="container row vertical-offset-100">
+								<div class="col-md-4 col-md-offset-4 pull-center">
+									<% include ./partials/footer %>
+								</div>
+							</div>
+						</footer>
+						<div id="myModal" class="modal fade" role="dialog">
+							<div class="modal-dialog">
+								
+								<!-- Modal content-->
+								<div class="modal-content">
+									<div class="modal-header">
+										<button type="button" class="close" data-dismiss="modal">&times;</button>
+										<h4 class="modal-title">Edit Borehole Information</h4>
+									</div>
+									<div class="modal-body">
+										<form id="property_data">
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Name</label>
+												<input  name="street_ad" required="required" type="text" class="form-control" id="street_ad" placeholder="Enter Borehole Name">
+											</div>
+											
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Type</label>
+												<input  name="street_number" type="text" class="form-control" id="street_number" placeholder="Enter Borehole Type">
+											</div>
+											
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Description</label>
+												<textarea  name="acc_name" type="text"  class="form-control" id="acc_name" placeholder="Borehole Description"> </textarea>
+											</div>
 
-							const bingLayer = L.tileLayer.bing(BING_KEY,{
-								'attribution': 'bing maps',
-								maxZoom: 20,
-								minZoom: 12,
-							}).addTo(map);
+											<div class="form-group" >
+												<label for="exampleInputPassword1">Borehole Status</label>
+												<select class="form-control" id="acc_num" name="acc_num">
+													<option>--Select--</option>
+													<option value="Functional">Functional</option>
+													<option value="Not working">Not Working</option>
+												</select>
+											</div>
+									
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole pH</label>
+												<input  name="ph" type="text"  class="form-control" id="ph" placeholder="Enter Borehole Ph">
+											</div>
 
-							const basemap = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-								crs: 3875,
-								'attribution': 'Google',
-								maxZoom: 20,
-								minZoom: 12,
-								subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-							}).addTo(map);
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Tantium</label>
+												<input  name="ta" type="text"  class="form-control" id="ta" placeholder="Enter Borehole TA">
+											</div>
 
-							const openstreet = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png',
-							{
-								attribution: ' OpenStreetMap',
-								minZoom: 12,
-								maxZoom: 20
-							}).addTo(map);
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole tH</label>
+												<input  name="th" type="text"  class="form-control" id="th" placeholder="Enter Borehole Th">
+											</div>
 
-							function getColor(d) {
-								return d !== null && d!=='' ? 'black' : 'red';
-							}
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Calcium Hydride</label>
+												<input  name="cah" type="text"  class="form-control" id="cah" placeholder="Enter Borehole CAH">
+											</div>
 
-							var mystyle = {
-								"color": "green",
-								"weight": 1,
-								"opacity": 0.90
-							};
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Magnesium Hydride</label>
+												<input  name="mgh" type="text"  class="form-control" id="mgh" placeholder="Enter Borehole Mgh">
+											</div>
 
-							function b_style(feature) {
-								return {
-									fillColor: b_getColor(feature.boreholes.f3),
-									weight: 8,
-									opacity: 10,
-									color: 'red',
-									dashArray: '1',
-									fillOpacity: 6,
-									radius: 4,
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Magnesium</label>
+												<input  name="mg" type="text"  class="form-control" id="mg" placeholder="Enter Borehole Mg">
+											</div>
 
-								};
-							}
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Calcium</label>
+												<input  name="ca" type="text"  class="form-control" id="ca" placeholder="Enter Borehole CA">
+											</div>
 
-							function b_getColor(d) {
-								return d !== null && d ==='Functional' ? 'green' : 'red';
-							}
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Dissoved Oxygen</label>
+												<input  name="do" type="text"  class="form-control" id="do" placeholder="Enter Borehole DO">
+											</div>
 
-							function style(feature) {
-								return {
-									fillColor: getColor(feature.properties.f1),
-									weight: 2,
-									opacity: 0.4,
-									color: 'grey',
-									dashArray: '3',
-									fillOpacity: 0.5
-								};
-							}
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Disolved Oxygen %</label>
+												<input  name="do_perc" type="text"  class="form-control" id="do_perc" placeholder="Enter Borehole DO %">
+											</div>
+											
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Chloride</label>
+												<input  name="cl" type="text"  class="form-control" id="cl" placeholder="Enter Borehole Cl">
+											</div>
 
-							var cadaLayer = L.geoJson(false, {
-								style: style,
-								onEachFeature: onEachFeature
-							});
-
-							var boreholeLayer = L.geoJson(false, {
-								style: b_style,
-								pointToLayer: function(feature, latlng) {
-								return new L.Marker(latlng, {b_style});
-							},
-								onEachFeature: onEachBFeature
-							});
-
-							var zoneLayer = L.geoJson(false, {
-								style: mystyle,
-								onEachFeature:onEachFeature
-							});
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Total Dissoved Solids</label>
+												<input  name="tds" type="text"  class="form-control" id="tds" placeholder="Enter Borehole TDS">
+											</div>
 
 
-							$.getJSON("/api/parcels", function (data) {
-								console.log('here')
-                            // add GeoJSON data to layer and add to the map once the file is loaded
-                            cadaLayer.addData(data).addTo(map);
-							   });
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Electrical Conductivity</label>
+												<input  name="ec" type="text"  class="form-control" id="ec" placeholder="Enter Borehole EC">
+											</div>
+
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Turbidity</label>
+												<input  name="turb" type="text"  class="form-control" id="turb" placeholder="Enter Borehole Turb">
+											</div>
+
+											<div class="form-group">
+												<label for="exampleInputEmail1">Borehole Total Coliform</label>
+												<input  name="tc" type="text"  class="form-control" id="tc" placeholder="Enter Borehole TC">
+											</div>
+											
+											<input type="hidden" name="table_id" id="table_id" value="">
+										</form>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
+										<button type="button" class="btn btn-success btn_save">Save Information</button>
+									</div>
+								</div>
+								
+							</div>
+						</div>
+						
+						
+						<script>
+							$(document).on("click", ".open_modal", function () {
+								var UserName = $(this).data('id');
+								$(".modal-body #table_id").val( UserName );
+								$(".modal-body #street_ad").val();
+								$(".modal-body #street_number").val();
+								$(".modal-body #acc_name").val();
+								$(".modal-body #acc_num").val();
+								$(".modal-body #ph").val();
+								$(".modal-body #ta").val();
+								$(".modal-body #th").val();
+								$(".modal-body #cah").val();
+								$(".modal-body #mgh").val();
+								$(".modal-body #mg").val();
+								$(".modal-body #ca").val();
+								$(".modal-body #do").val();
+								$(".modal-body #do_perc").val();
+								$(".modal-body #cl").val();
+								$(".modal-body #tds").val();
+								$(".modal-body #ec").val();
+								$(".modal-body #turb").val();
+								$(".modal-body #tc").val();
 
 
-							$.getJSON("/api/boreholes", function (data) {
-								console.log('here2')
 
-                            // add GeoJSON data to layer and add to the map once the file is loaded
-                            boreholeLayer.addData(data).addTo(map);
-                       		});
-							   
-							var searchControl = new L.Control.Search({
-								layer: cadaLayer,
-								propertyName: 'f2',
-								circleLocation: true,
-								initial:false,
-								zoom:16,
-								textPlaceholder: 'e.g 123 Mkoba',
-								position: 'topright'
-							});
+								$.getJSON("/api/parcel/"+UserName, function (data) {
+									$(".modal-body #street_ad").val(data.features[0].boreholes.f1 );
+									$(".modal-body #street_number").val(data.features[0].boreholes.f2);
+									$(".modal-body #acc_name").val(data.features[0].boreholes.f4);
+									$(".modal-body #acc_num").val(data.features[0].boreholes.f3);
+									$(".modal-body #ph").val(data.features[0].boreholes.f6);
+									$(".modal-body #ta").val(data.features[0].boreholes.f7);
+									$(".modal-body #th").val(data.features[0].boreholes.f8);
+									$(".modal-body #cah").val(data.features[0].boreholes.f9);
+									$(".modal-body #mgh").val(data.features[0].boreholes.f10);
+									$(".modal-body #mg").val(data.features[0].boreholes.f11);
+									$(".modal-body #ca").val(data.features[0].boreholes.f12);
+									$(".modal-body #do").val(data.features[0].boreholes.f13);
+									$(".modal-body #do_perc").val(data.features[0].boreholes.f14);
+									$(".modal-body #cl").val(data.features[0].boreholes.f15);
+									$(".modal-body #tds").val(data.features[0].boreholes.f16);
+									$(".modal-body #ec").val(data.features[0].boreholes.f17);
+									$(".modal-body #turb").val(data.features[0].boreholes.f18);
+									$(".modal-body #tc").val(data.features[0].boreholes.f19);
 
-							searchControl.on('search_locationfound', function (e) {
-
-								e.layer.setStyle({
-									mouseover: highlightFeature,
-									mouseout: resetHighlight,
-									click: zoomToFeature
 								});
-								if (e.layer._popup) e.layer.openPopup(
-
-									);
-
-							}).on('search_collapsed', function (e) {
-
-							    cadaLayer.eachLayer(function (layer) { //restore feature color
-							    	cadaLayer.resetStyle(layer);
-							    });
 							});
-
-							map.addControl(searchControl); //inizialize search control
-
-							function highlightFeature(e) {
-								var layer = e.target;
-								layer.setStyle({
-									weight: 5,
-									color: '#666',
-									dashArray: '',
-									fillOpacity: 0.4
-								});
-
-								if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-									layer.bringToFront();
-								}
-							}
-
-							function resetHighlight(e) {
-								cadaLayer.resetStyle(e.target);
-							}
-
-							function zoomToFeature(e) {
-								map.fitBounds(e.target.getBounds());
-							}
-
-							function onEachFeature(feature, layer) {
-								layer.on({
-									mouseover: highlightFeature,
-									mouseout: resetHighlight,
-									click: zoomToFeature
-								});
-
-								layer.bindPopup(
-									'Stand Number: ' + feature.properties.f1 + '</br>'+
-									'Street Address: ' + feature.properties.f2 + '</br>'
-									+ 'Account Number: ' + feature.properties.f3 + '</br>'
-									+ 'Account Name: ' + feature.properties.f4 + '</br>'
-								)
-							}
-
-							function onEachBFeature(feature, layer) {
-								layer.on({
-									mouseover: highlightFeature,
-									// mouseout: resetHighlight,
-									// click: zoomToFeature
-								});
-
-								layer.bindPopup(
-									'Borehole Name: ' + feature.boreholes.f1 + '</br>'+
-									'Borehole Type: ' + feature.boreholes.f2 + '</br>'
-									+ 'Borehole Status: ' + feature.boreholes.f3 + '</br>'
-									+ 'Borehole Description: ' + feature.boreholes.f4 + '</br>' +
-									'<p>Edit Borehole Info: <a data-id='+feature.boreholes.f5+'  data-toggle="modal" href="#myModal" class="btn btn-info btn-sm open_modal">'+
-										 '<span class="glyphicon glyphicon-edit"></span> Edit Info</a>' +
-									'</p> '
-								)
-							}
-
-							const baseMaps = {
-								'Google Hybrid': basemap,
-								'Bing': bingLayer,
-								'Open Streetmap': openstreet,
-
-							};
-							const overlays = {
-								"Boreholes": boreholeLayer,
-								"All Properties": cadaLayer,
-							};
-
-							L.control.layers(baseMaps, overlays,null,{collapsed:false}).addTo(map);
-
+							$('.btn_save').click(function(){
+								var form = $('#property_data');
+								var hidden = form.find(':input:hidden').removeAttr('hidden');
+								var  form_data = form.serialize();
+								hidden.attr('hidden', 'hidden');
+								$.ajax({ 
+									url: '/save_info',
+									type: 'POST',
+									cache: false, 
+									data: form_data, 
+									dataType:'json',
+									success: function(data){
+										location.reload();
+									}
+									, error: function(jqXHR, textStatus, err){
+										alert('text status '+textStatus+', err '+err)
+									}
+								})
+							}); 
+							
+						</script> 
+						</html>
+						
+						<script>
+							
 						</script>
-
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="col-md-2">
-
-			<div class="box box-primary" id="townSummary">
-				<section>Summary</secyion>
-					<table class="table table-bordered table-striped" id="property_summary">
-						<tr>
-							<th><small>Total Number of Properties</small></th>
-						</tr>
-					</table>
-
-					<table class="table table-bordered table-striped" id="unallocated_summary">
-						<tr>
-							<th><small> Number of Boreholes </small></th>
-						</tr>
-					</table>
-
-					<table class="table table-bordered table-striped " id="allocated_summary">
-					  <tr>
-					  	<th><small>Working Boreholes</small></th>
-					  </tr>
-					</table>
-			</div>
-		</div>
-
-	</body>
-	<footer>
-		<div class="container row vertical-offset-100">
-			<div class="col-md-4 col-md-offset-4 pull-center">
-				<% include ./partials/footer %>
-			</div>
-		</div>
-	</footer>
-	<div id="myModal" class="modal fade" role="dialog">
-		<div class="modal-dialog">
-
-			<!-- Modal content-->
-			<div class="modal-content">
-				<div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal">&times;</button>
-					<h4 class="modal-title">Edit Borehole Information</h4>
-				</div>
-				<div class="modal-body">
-					<form id="property_data">
-						<div class="form-group">
-							<label for="exampleInputEmail1">Borehole Name</label>
-							<input  name="street_ad" required="required" type="text" class="form-control" id="street_ad" placeholder="Enter Borehole Name">
-						</div>
-
-						<div class="form-group">
-							<label for="exampleInputEmail1">Borehole Type</label>
-							<input  name="street_number" type="text" class="form-control" id="street_number" placeholder="Enter Borehole Type">
-						</div>
-
-						<div class="form-group">
-							<label for="exampleInputEmail1">Borehole Description</label>
-							<textarea  name="acc_name" type="text"  class="form-control" id="acc_name" placeholder="Borehole Description"> </textarea>
-						</div>
-
-						<div class="form-group">
-							<label for="exampleInputEmail1">Borehole Status</label>
-							<input  name="acc_num" type="text"  class="form-control" id="acc_num" placeholder="Enter Account Number">
-						</div>
-
-						<input type="hidden" name="table_id" id="table_id" value="">
-					</form>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-success btn_save">Save Information</button>
-				</div>
-			</div>
-
-		</div>
-	</div>
-
-
-	<script>
-		$(document).on("click", ".open_modal", function () {
-			var UserName = $(this).data('id');
-			$(".modal-body #table_id").val( UserName );
-			$(".modal-body #street_ad").val();
-			$(".modal-body #street_number").val();
-			$(".modal-body #acc_name").val();
-			$(".modal-body #acc_num").val();
-			$.getJSON("/api/parcel/"+UserName, function (data) {
-				$(".modal-body #street_ad").val(data.features[0].boreholes.f1 );
-				$(".modal-body #street_number").val(data.features[0].boreholes.f2);
-				$(".modal-body #acc_name").val(data.features[0].boreholes.f4);
-				$(".modal-body #acc_num").val(data.features[0].boreholes.f3);
-			});
-		});
-		$('.btn_save').click(function(){
-		var form = $('#property_data');
-		 var hidden = form.find(':input:hidden').removeAttr('hidden');
-		 var  form_data = form.serialize();
-		 hidden.attr('hidden', 'hidden');
-			$.ajax({ 
-				url: '/save_info',
-				type: 'POST',
-				cache: false, 
-				data: form_data, 
-				dataType:'json',
-				success: function(data){
-					location.reload();
-				}
-				, error: function(jqXHR, textStatus, err){
-					alert('text status '+textStatus+', err '+err)
-				}
-			})
-		}); 
- 
-	</script> 
-	</html>
-
-	<script>
- 
-	</script>

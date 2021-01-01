@@ -37,7 +37,7 @@ var conString = "postgres://" + username + ":" + password + "@" + host + "/" + d
 const boreholes = "SELECT row_to_json(fc) " +
 "FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) " +
 "As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, " +
-"row_to_json((b_name, b_type, b_status, b_descript,gid))" +
+"row_to_json((b_name, b_type, b_status, b_descript,gid,b_ph,b_t_a,b_t_h,b_c_a_h,b_m_g_h,b_mg,b_ca,b_do,b_do_perc,b_cl,b_tds,b_ec,b_turb,b_tc))" +
 " As boreholes FROM final_boreholes As lg) As f) As fc ";
 
 const cadastral = "SELECT row_to_json(fc) " +
@@ -242,7 +242,7 @@ router.get('/api/parcel/:id', function(req, res) {
 	const cadastral_sql = "	SELECT row_to_json(fc) " +
 	"FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) " +
 	"As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, " +
-	"row_to_json((b_name, b_type, b_status, b_descript,gid))" +
+	"row_to_json((b_name, b_type, b_status, b_descript,gid,b_ph,b_t_a,b_t_h,b_c_a_h,b_m_g_h,b_mg,b_ca,b_do,b_do_perc,b_cl,b_tds,b_ec,b_turb,b_tc))" +
 	" As boreholes FROM final_boreholes As lg WHERE gid ="+url+") As f) As fc  ";
 	query = client.query(new Query(cadastral_sql));
 	
@@ -324,7 +324,9 @@ router.post('/save_info', (req, res, next) => {
 		client.connect();
 		const update_sql = "UPDATE final_boreholes set b_name='"+req.body.street_ad
 		+"',b_type='"+req.body.street_number +"', b_status='"+req.body.acc_num
-		+"', b_descript='"+req.body.acc_name+"' WHERE gid="+req.body.table_id;
+		+"', b_descript='"+req.body.acc_name+"', b_ph='"+req.body.ph+"', b_t_a='"+req.body.ta+"', b_t_h='"+req.body.th+"', b_c_a_h='"+req.body.cah+"', b_m_g_h='"+req.body.mgh
+		+"', b_mg='"+req.body.mg+"', b_ca='"+req.body.ca+"', b_do='"+req.body.do+"', b_do_perc='"+req.body.do_perc+"', b_cl='"+req.body.cl+"', b_tds='"+req.body.tds
+		+"', b_ec='"+req.body.ec+"', b_turb='"+req.body.turb+"', b_tc='"+req.body.tc+"' WHERE gid="+req.body.table_id;
 		query = client.query(new Query(update_sql));
 		console.log(update_sql);
 		query.on("end", function(result) {
